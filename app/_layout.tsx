@@ -95,6 +95,28 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Request notification permission
+async function requestNotificationPermission() {
+  try {
+    const settings = await Notifications.getPermissionsAsync();
+    if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+      return true;
+    }
+
+    if (settings.canAskAgain) {
+      const permission = await Notifications.requestPermissionsAsync({
+        ios: {
+          types: [Notifications.IosAuthorizationStatus.ALERT, Notifications.IosAuthorizationStatus.SOUND],
+        },
+      });
+      return permission.granted;
+    }
+  } catch (error) {
+    console.log('Notification permission error:', error);
+  }
+  return false;
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -110,6 +132,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
+      // Request notification permission
+      requestNotificationPermission();
+      
       // Show disclaimer alert on app launch
       if (!disclaimerShown) {
         Alert.alert(

@@ -69,7 +69,7 @@ export default function NewsScreen() {
     loadNews();
     fetchAdsConfig();
     
-    // Haberleri 30 saniyede bir kontrol et ve yeni haberler varsa bildir
+    // Haberleri 10 saniyede bir kontrol et ve yeni haberler varsa bildir
     const interval = setInterval(async () => {
       try {
         const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
@@ -81,16 +81,21 @@ export default function NewsScreen() {
           if (data.news && data.news.length > allNews.length) {
             // Yeni haberler var!
             const newArticles = data.news.slice(0, data.news.length - allNews.length);
-            newArticles.forEach(article => {
-              // Bildirim gönder
-              Notifications.scheduleNotificationAsync({
-                content: {
-                  title: '📰 Yeni Haber!',
-                  body: article.title,
-                  data: { newsId: article.id },
-                },
-                trigger: { seconds: 1 },
-              });
+            console.log(`🔔 ${newArticles.length} yeni haber bulundu!`);
+            
+            newArticles.forEach((article, index) => {
+              // Her haber için 500ms fark ile bildirim gönder
+              setTimeout(() => {
+                Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: '📰 Yeni Haber!',
+                    body: article.title,
+                    data: { newsId: article.id },
+                  },
+                  trigger: { seconds: 1 },
+                });
+                console.log(`✅ Bildirim gönderildi: ${article.title}`);
+              }, index * 500);
             });
             
             setAllNews(data.news);
@@ -100,7 +105,7 @@ export default function NewsScreen() {
       } catch (error) {
         console.log('Polling error:', error);
       }
-    }, 30000); // 30 saniyede bir
+    }, 10000); // 10 saniyede bir
     
     return () => clearInterval(interval);
   }, [allNews.length]);
