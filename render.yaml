@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: kriptohaber-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npx expo export --platform web
+    startCommand: npx serve -s dist -l 3000
+    envVars:
+      - key: NODE_ENV
+        value: production
+
