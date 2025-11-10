@@ -4,8 +4,10 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npx expo export --platform web
-    startCommand: npx serve -s dist -l 3000 --spa
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 3000
 
