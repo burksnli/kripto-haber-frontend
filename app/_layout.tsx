@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +11,31 @@ import { Alert } from 'react-native';
 import { useColorScheme } from '@/components/useColorScheme';
 import { PriceAlertsProvider } from '@/context/PriceAlertsContext';
 import { PortfolioProvider } from '@/context/PortfolioContext';
+
+// Custom theme definitions
+const LightTheme = {
+  dark: false,
+  colors: {
+    primary: '#627EEA',
+    background: '#FFFFFF',
+    card: '#F9F9F9',
+    text: '#1A1A1A',
+    border: '#E0E0E0',
+    notification: '#FF4444',
+  },
+};
+
+const DarkTheme = {
+  dark: true,
+  colors: {
+    primary: '#7B93FF',
+    background: '#0D0D0D',
+    card: '#1A1A1A',
+    text: '#FFFFFF',
+    border: '#2A2A2A',
+    notification: '#FF6B6B',
+  },
+};
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -76,9 +101,10 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const theme = colorScheme === 'dark' ? DarkTheme : LightTheme;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={theme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
