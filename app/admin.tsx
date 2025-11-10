@@ -158,6 +158,12 @@ export default function AdminPanel() {
         style: 'destructive',
         onPress: async () => {
           try {
+            console.log('🗑️ DELETE başladı:', {
+              newsId,
+              token: adminToken ? 'exists' : 'missing',
+              url: `${backendUrl}/api/news/${newsId}`
+            });
+
             const response = await fetch(`${backendUrl}/api/news/${newsId}`, {
               method: 'DELETE',
               headers: {
@@ -165,14 +171,23 @@ export default function AdminPanel() {
               },
             });
 
+            console.log('DELETE Response:', {
+              status: response.status,
+              ok: response.ok
+            });
+
+            const data = await response.json();
+            console.log('DELETE Response data:', data);
+
             if (response.ok) {
               setNews(news.filter(n => n.id !== newsId));
               Alert.alert('Başarılı', 'Haber silindi');
             } else {
-              Alert.alert('Hata', 'Haber silinemedi');
+              Alert.alert('Hata', data.error || 'Haber silinemedi - ' + response.status);
             }
           } catch (error) {
-            Alert.alert('Hata', 'Silme işlemi başarısız');
+            console.error('DELETE error:', error);
+            Alert.alert('Hata', 'Silme işlemi başarısız: ' + (error as any).message);
           }
         },
       },
