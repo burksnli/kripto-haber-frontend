@@ -23,6 +23,24 @@ const LightTheme = {
     border: '#E0E0E0',
     notification: '#FF4444',
   },
+  fonts: {
+    regular: {
+      fontFamily: 'System',
+      fontWeight: '400' as const,
+    },
+    medium: {
+      fontFamily: 'System',
+      fontWeight: '500' as const,
+    },
+    light: {
+      fontFamily: 'System',
+      fontWeight: '300' as const,
+    },
+    thin: {
+      fontFamily: 'System',
+      fontWeight: '200' as const,
+    },
+  },
 };
 
 const DarkTheme = {
@@ -34,6 +52,24 @@ const DarkTheme = {
     text: '#FFFFFF',
     border: '#2A2A2A',
     notification: '#FF6B6B',
+  },
+  fonts: {
+    regular: {
+      fontFamily: 'System',
+      fontWeight: '400' as const,
+    },
+    medium: {
+      fontFamily: 'System',
+      fontWeight: '500' as const,
+    },
+    light: {
+      fontFamily: 'System',
+      fontWeight: '300' as const,
+    },
+    thin: {
+      fontFamily: 'System',
+      fontWeight: '200' as const,
+    },
   },
 };
 
