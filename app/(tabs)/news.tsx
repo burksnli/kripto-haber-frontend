@@ -63,9 +63,11 @@ export default function NewsScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [adsConfig, setAdsConfig] = useState({ showAdsOnNewsPage: true });
 
   useEffect(() => {
     loadNews();
+    fetchAdsConfig();
     
     // Haberleri 30 saniyede bir kontrol et ve yeni haberler varsa bildir
     const interval = setInterval(async () => {
@@ -144,6 +146,19 @@ export default function NewsScreen() {
     }
   };
 
+  const fetchAdsConfig = async () => {
+    try {
+      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+      const response = await fetch(`${backendUrl}/admin/ads/config`);
+      const data = await response.json();
+      if (data.ok) {
+        setAdsConfig(data.config);
+      }
+    } catch (error) {
+      console.log('Error fetching ads config:', error);
+    }
+  };
+
   const handleSearch = (text: string) => {
     setSearchQuery(text);
     if (text.trim() === '') {
@@ -198,8 +213,8 @@ export default function NewsScreen() {
         <Text style={styles.disclaimerText}>⚠️ Bu bilgiler yatırım tavsiyesi değildir.</Text>
       </View>
 
-      {/* Ad Banner */}
-      <AdBanner />
+      {/* Ad Banner - Admin tarafından kontrol edilir */}
+      {adsConfig.showAdsOnNewsPage && adsConfig.bannerAdsEnabled && <AdBanner />}
 
       {/* Search Bar */}
       <RNView style={styles.searchContainer}>

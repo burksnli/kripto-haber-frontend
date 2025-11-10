@@ -31,13 +31,62 @@ export default function AdminPanel() {
   const [editEmoji, setEditEmoji] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
+  // Ads configuration state
+  const [adsConfig, setAdsConfig] = useState({
+    bannerAdsEnabled: true,
+    showAdsOnNewsPage: true,
+    showAdsOnPricesPage: false,
+    showAdsOnHomeScreen: false,
+  });
+  const [adsSaving, setAdsSaving] = useState(false);
+
   useEffect(() => {
     const savedToken = localStorage.getItem('adminToken');
     if (savedToken) {
       setAdminToken(savedToken);
       fetchNews(savedToken);
+      fetchAdsConfig();
     }
   }, []);
+
+  const fetchAdsConfig = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/admin/ads/config`);
+      const data = await response.json();
+      if (data.ok) {
+        setAdsConfig(data.config);
+      }
+    } catch (error) {
+      console.error('Error fetching ads config:', error);
+    }
+  };
+
+  const saveAdsConfig = async () => {
+    if (!adminToken) return;
+    
+    setAdsSaving(true);
+    try {
+      const response = await fetch(`${backendUrl}/admin/ads/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken,
+        },
+        body: JSON.stringify(adsConfig),
+      });
+
+      const data = await response.json();
+      if (data.ok) {
+        Alert.alert('Başarılı', 'Reklam ayarları kaydedildi');
+      } else {
+        Alert.alert('Hata', data.error || 'Kaydedilemedi');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Kaydetme işlemi başarısız');
+    } finally {
+      setAdsSaving(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!password.trim()) {
@@ -288,6 +337,61 @@ export default function AdminPanel() {
           <Text style={styles.statLabel}>Son Güncelleme</Text>
           <Text style={styles.statValue}>{stats.lastUpdate}</Text>
         </View>
+      </View>
+
+      {/* Ads Configuration */}
+      <View style={styles.newsSection}>
+        <Text style={styles.sectionTitle}>📺 Reklam Ayarları</Text>
+
+        <RNView style={styles.adsSetting}>
+          <Text style={styles.adsSettingLabel}>Reklamları Etkinleştir</Text>
+          <Pressable 
+            style={[styles.toggleBtn, adsConfig.bannerAdsEnabled && styles.toggleBtnActive]}
+            onPress={() => setAdsConfig({...adsConfig, bannerAdsEnabled: !adsConfig.bannerAdsEnabled})}
+          >
+            <Text style={styles.toggleText}>{adsConfig.bannerAdsEnabled ? '✓ AÇIK' : '✗ KAPALI'}</Text>
+          </Pressable>
+        </RNView>
+
+        <RNView style={styles.adsSetting}>
+          <Text style={styles.adsSettingLabel}>Haberler Sayfasında Göster</Text>
+          <Pressable 
+            style={[styles.toggleBtn, adsConfig.showAdsOnNewsPage && styles.toggleBtnActive]}
+            onPress={() => setAdsConfig({...adsConfig, showAdsOnNewsPage: !adsConfig.showAdsOnNewsPage})}
+          >
+            <Text style={styles.toggleText}>{adsConfig.showAdsOnNewsPage ? '✓ AÇIK' : '✗ KAPALI'}</Text>
+          </Pressable>
+        </RNView>
+
+        <RNView style={styles.adsSetting}>
+          <Text style={styles.adsSettingLabel}>Fiyatlar Sayfasında Göster</Text>
+          <Pressable 
+            style={[styles.toggleBtn, adsConfig.showAdsOnPricesPage && styles.toggleBtnActive]}
+            onPress={() => setAdsConfig({...adsConfig, showAdsOnPricesPage: !adsConfig.showAdsOnPricesPage})}
+          >
+            <Text style={styles.toggleText}>{adsConfig.showAdsOnPricesPage ? '✓ AÇIK' : '✗ KAPALI'}</Text>
+          </Pressable>
+        </RNView>
+
+        <RNView style={styles.adsSetting}>
+          <Text style={styles.adsSettingLabel}>Ana Sayfa'da Göster</Text>
+          <Pressable 
+            style={[styles.toggleBtn, adsConfig.showAdsOnHomeScreen && styles.toggleBtnActive]}
+            onPress={() => setAdsConfig({...adsConfig, showAdsOnHomeScreen: !adsConfig.showAdsOnHomeScreen})}
+          >
+            <Text style={styles.toggleText}>{adsConfig.showAdsOnHomeScreen ? '✓ AÇIK' : '✗ KAPALI'}</Text>
+          </Pressable>
+        </RNView>
+
+        <Pressable 
+          style={[styles.button, styles.saveButton]}
+          onPress={saveAdsConfig}
+          disabled={adsSaving}
+        >
+          <Text style={styles.buttonText}>
+            {adsSaving ? 'Kaydediliyor...' : '💾 Kaydet'}
+          </Text>
+        </Pressable>
       </View>
 
       {/* News List */}
@@ -682,5 +786,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 20,
     marginBottom: 20,
+  },
+  adsSetting: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(98, 126, 234, 0.03)',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(98, 126, 234, 0.1)',
+  },
+  adsSettingLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+  },
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  toggleBtnActive: {
+    backgroundColor: '#28a745',
+    borderColor: '#28a745',
+  },
+  toggleText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+  },
+  saveButton: {
+    backgroundColor: '#28a745',
+    marginTop: 8,
   },
 });
