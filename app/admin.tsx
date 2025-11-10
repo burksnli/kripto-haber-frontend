@@ -151,6 +151,10 @@ export default function AdminPanel() {
   };
 
   const handleDeleteNews = async (newsId: string) => {
+    console.log('handleDeleteNews called with:', newsId);
+    console.log('adminToken:', adminToken);
+    console.log('backendUrl:', backendUrl);
+    
     Alert.alert('Sil', 'Bu haberi silmek istediğinize emin misiniz?', [
       { text: 'İptal', style: 'cancel' },
       {
@@ -316,7 +320,10 @@ export default function AdminPanel() {
                   </Pressable>
                   <Pressable
                     style={[styles.actionBtn, styles.deleteBtn]}
-                    onPress={() => handleDeleteNews(item.id)}
+                    onPress={() => {
+                      console.log('🗑️ Delete button pressed for:', item.id);
+                      handleDeleteNews(item.id);
+                    }}
                   >
                     <Text style={styles.actionBtnText}>🗑️</Text>
                   </Pressable>
