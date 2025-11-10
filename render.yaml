@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install && npx expo export --platform web
-    startCommand: npx serve -s dist -l 3000
+    startCommand: npx serve -s dist -l 3000 --spa
     envVars:
       - key: NODE_ENV
         value: production
