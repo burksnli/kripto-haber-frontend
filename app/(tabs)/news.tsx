@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
 import { Text, View } from '@/components/Themed';
+import AdBanner from '@/components/AdBanner';
 
 interface NewsItem {
   id: string;
@@ -196,6 +197,9 @@ export default function NewsScreen() {
       <View style={styles.disclaimer}>
         <Text style={styles.disclaimerText}>⚠️ Bu bilgiler yatırım tavsiyesi değildir.</Text>
       </View>
+
+      {/* Ad Banner */}
+      <AdBanner />
 
       {/* Search Bar */}
       <RNView style={styles.searchContainer}>

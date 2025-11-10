@@ -25,7 +25,8 @@
       "package": "com.kriptohaber.mobil",
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
-      ]
+      ],
+      "googleMobileAdsAppId": "ca-app-pub-9613759307120698~5338200585"
     },
     "web": {
       "bundler": "metro",
