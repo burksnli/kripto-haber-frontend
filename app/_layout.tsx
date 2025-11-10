@@ -99,17 +99,25 @@ Notifications.setNotificationHandler({
 async function requestNotificationPermission() {
   try {
     const settings = await Notifications.getPermissionsAsync();
-    if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+    
+    // Already granted
+    if (settings.granted) {
       return true;
     }
 
+    // iOS specific check
+    if (settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+      return true;
+    }
+
+    // Can ask again
     if (settings.canAskAgain) {
-      const permission = await Notifications.requestPermissionsAsync({
-        ios: {
-          types: [Notifications.IosAuthorizationStatus.ALERT, Notifications.IosAuthorizationStatus.SOUND],
-        },
-      });
-      return permission.granted;
+      try {
+        const permission = await Notifications.requestPermissionsAsync();
+        return permission.granted;
+      } catch (requestError) {
+        console.log('Request permission error:', requestError);
+      }
     }
   } catch (error) {
     console.log('Notification permission error:', error);
