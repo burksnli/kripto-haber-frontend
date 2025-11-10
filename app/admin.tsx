@@ -116,8 +116,6 @@ export default function AdminPanel() {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': adminToken || '',
-          'x-admin-verified': 'true',
-          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify({
           title: editTitle,
@@ -162,7 +160,6 @@ export default function AdminPanel() {
               method: 'DELETE',
               headers: {
                 'x-admin-token': adminToken || '',
-                'x-admin-verified': 'true',
               },
             });
 
