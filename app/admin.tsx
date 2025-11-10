@@ -103,12 +103,21 @@ export default function AdminPanel() {
 
     setEditLoading(true);
     try {
+      console.log('Updating news:', {
+        id: editingNews.id,
+        title: editTitle,
+        body: editBody,
+        emoji: editEmoji,
+        token: adminToken ? 'exists' : 'missing'
+      });
+
       const response = await fetch(`${backendUrl}/api/news/${editingNews.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': adminToken || '',
           'x-admin-verified': 'true',
+          'ngrok-skip-browser-warning': 'true',
         },
         body: JSON.stringify({
           title: editTitle,
@@ -116,6 +125,10 @@ export default function AdminPanel() {
           emoji: editEmoji,
         }),
       });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok) {
         const updatedNews = news.map(n =>
@@ -127,10 +140,11 @@ export default function AdminPanel() {
         setEditingNews(null);
         Alert.alert('Başarılı', 'Haber güncellendi');
       } else {
-        Alert.alert('Hata', 'Haber güncellenemedi');
+        Alert.alert('Hata', data.error || 'Haber güncellenemedi - ' + response.status);
       }
     } catch (error) {
-      Alert.alert('Hata', 'Güncelleme işlemi başarısız');
+      console.error('Update error:', error);
+      Alert.alert('Hata', 'Güncelleme işlemi başarısız: ' + (error as any).message);
     } finally {
       setEditLoading(false);
     }
