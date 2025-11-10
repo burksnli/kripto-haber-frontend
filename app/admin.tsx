@@ -150,7 +150,7 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDeleteNews = async (newsId: string) => {
+  const handleDeleteNews = (newsId: string) => {
     console.log('handleDeleteNews called with:', newsId);
     console.log('adminToken:', adminToken);
     console.log('backendUrl:', backendUrl);
@@ -160,42 +160,47 @@ export default function AdminPanel() {
       {
         text: 'Sil',
         style: 'destructive',
-        onPress: async () => {
-          try {
-            console.log('🗑️ DELETE başladı:', {
-              newsId,
-              token: adminToken ? 'exists' : 'missing',
-              url: `${backendUrl}/api/news/${newsId}`
-            });
-
-            const response = await fetch(`${backendUrl}/api/news/${newsId}`, {
-              method: 'DELETE',
-              headers: {
-                'x-admin-token': adminToken || '',
-              },
-            });
-
-            console.log('DELETE Response:', {
-              status: response.status,
-              ok: response.ok
-            });
-
-            const data = await response.json();
-            console.log('DELETE Response data:', data);
-
-            if (response.ok) {
-              setNews(news.filter(n => n.id !== newsId));
-              Alert.alert('Başarılı', 'Haber silindi');
-            } else {
-              Alert.alert('Hata', data.error || 'Haber silinemedi - ' + response.status);
-            }
-          } catch (error) {
-            console.error('DELETE error:', error);
-            Alert.alert('Hata', 'Silme işlemi başarısız: ' + (error as any).message);
-          }
+        onPress: () => {
+          // Async işlemi direkt çalıştır (await kullanma)
+          performDelete(newsId);
         },
       },
     ]);
+  };
+
+  const performDelete = async (newsId: string) => {
+    try {
+      console.log('🗑️ DELETE başladı:', {
+        newsId,
+        token: adminToken ? 'exists' : 'missing',
+        url: `${backendUrl}/api/news/${newsId}`
+      });
+
+      const response = await fetch(`${backendUrl}/api/news/${newsId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-admin-token': adminToken || '',
+        },
+      });
+
+      console.log('DELETE Response:', {
+        status: response.status,
+        ok: response.ok
+      });
+
+      const data = await response.json();
+      console.log('DELETE Response data:', data);
+
+      if (response.ok) {
+        setNews(news.filter(n => n.id !== newsId));
+        Alert.alert('Başarılı', 'Haber silindi');
+      } else {
+        Alert.alert('Hata', data.error || 'Haber silinemedi - ' + response.status);
+      }
+    } catch (error) {
+      console.error('DELETE error:', error);
+      Alert.alert('Hata', 'Silme işlemi başarısız: ' + (error as any).message);
+    }
   };
 
   const handleLogout = () => {
