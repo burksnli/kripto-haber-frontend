@@ -1,6 +1,7 @@
 import { StyleSheet, ScrollView, FlatList, RefreshControl, View as RNView, TextInput, Pressable, Alert } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 
 import { Text, View } from '@/components/Themed';
 
@@ -64,7 +65,42 @@ export default function NewsScreen() {
 
   useEffect(() => {
     loadNews();
-  }, []);
+    
+    // Haberleri 30 saniyede bir kontrol et ve yeni haberler varsa bildir
+    const interval = setInterval(async () => {
+      try {
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+        const response = await fetch(`${backendUrl}/api/news`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.news && data.news.length > allNews.length) {
+            // Yeni haberler var!
+            const newArticles = data.news.slice(0, data.news.length - allNews.length);
+            newArticles.forEach(article => {
+              // Bildirim gönder
+              Notifications.scheduleNotificationAsync({
+                content: {
+                  title: '📰 Yeni Haber!',
+                  body: article.title,
+                  data: { newsId: article.id },
+                },
+                trigger: { seconds: 1 },
+              });
+            });
+            
+            setAllNews(data.news);
+            setNews(data.news);
+          }
+        }
+      } catch (error) {
+        console.log('Polling error:', error);
+      }
+    }, 30000); // 30 saniyede bir
+    
+    return () => clearInterval(interval);
+  }, [allNews.length]);
 
   const loadNews = async () => {
     try {
@@ -157,12 +193,6 @@ export default function NewsScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>📰 Kripto Haberler</Text>
-        <Text style={styles.headerSubtitle}>En son güncellemeler ve analiz</Text>
-      </View>
-
       <View style={styles.disclaimer}>
         <Text style={styles.disclaimerText}>⚠️ Bu bilgiler yatırım tavsiyesi değildir.</Text>
       </View>
