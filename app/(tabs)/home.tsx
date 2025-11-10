@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, RefreshControl, TouchableOpacity, Pressable } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -118,8 +118,34 @@ export default function HomeScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🏠 Ana Sayfa</Text>
-        <Text style={styles.headerSubtitle}>Kripto piyasasını izle</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerTitle}>🏠 Ana Sayfa</Text>
+            <Text style={styles.headerSubtitle}>Kripto piyasasını izle</Text>
+          </View>
+        </View>
+        
+        {/* Quick Menu */}
+        <View style={styles.quickMenu}>
+          <Pressable 
+            style={styles.quickMenuBtn}
+            onPress={() => router.push('/admin')}
+          >
+            <Text style={styles.quickMenuBtnText}>👨‍💼 Admin</Text>
+          </Pressable>
+          <Pressable 
+            style={styles.quickMenuBtn}
+            onPress={() => router.push('/settings')}
+          >
+            <Text style={styles.quickMenuBtnText}>⚙️ Ayarlar</Text>
+          </Pressable>
+          <Pressable 
+            style={styles.quickMenuBtn}
+            onPress={() => router.push('/analytics')}
+          >
+            <Text style={styles.quickMenuBtnText}>📊 İstatistikler</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.disclaimer}>
@@ -264,10 +290,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
     backgroundColor: 'rgba(98, 126, 234, 0.08)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(98, 126, 234, 0.1)',
+  },
+  headerTop: {
+    marginBottom: 12,
   },
   headerTitle: {
     fontSize: 28,
@@ -278,6 +307,27 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 13,
     opacity: 0.6,
+  },
+  quickMenu: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  quickMenuBtn: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: 'rgba(98, 126, 234, 0.15)',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(98, 126, 234, 0.3)',
+    alignItems: 'center',
+  },
+  quickMenuBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#627EEA',
   },
   disclaimer: {
     backgroundColor: '#fff3cd',

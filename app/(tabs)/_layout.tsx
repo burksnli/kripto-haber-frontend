@@ -47,13 +47,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="portfolio"
-        options={{
-          title: 'Portföy',
-          tabBarIcon: ({ color }) => <TabBarIcon name="briefcase" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="news"
         options={{
           title: 'Haberler',
@@ -72,20 +65,6 @@ export default function TabLayout() {
         options={{
           title: 'Uyarılar',
           tabBarIcon: ({ color }) => <TabBarIcon name="bell" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="info"
-        options={{
-          title: 'Bilgi',
-          tabBarIcon: ({ color }) => <TabBarIcon name="info-circle" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Ayarlar',
-          tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
         }}
       />
     </Tabs>
