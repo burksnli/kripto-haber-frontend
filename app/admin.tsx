@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Alert, FlatList } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Alert, FlatList, Modal } from 'react-native';
 import { Text, View } from '@/components/Themed';
 
 interface NewsItem {
@@ -21,9 +21,15 @@ export default function AdminPanel() {
     lastUpdate: '',
   });
   const [backendUrl] = useState('https://kripto-haber-backend.onrender.com');
+  
+  // Edit modal state
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editEmoji, setEditEmoji] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
-    // LocalStorage'dan token'ı al
     const savedToken = localStorage.getItem('adminToken');
     if (savedToken) {
       setAdminToken(savedToken);
@@ -77,6 +83,56 @@ export default function AdminPanel() {
       }
     } catch (error) {
       console.error('Haberler yüklenemedi:', error);
+    }
+  };
+
+  const handleOpenEdit = (newsItem: NewsItem) => {
+    setEditingNews(newsItem);
+    setEditTitle(newsItem.title);
+    setEditBody(newsItem.body);
+    setEditEmoji(newsItem.emoji || '📰');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingNews) return;
+
+    if (!editTitle.trim() || !editBody.trim()) {
+      Alert.alert('Hata', 'Başlık ve içerik boş olamaz');
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const response = await fetch(`${backendUrl}/api/news/${editingNews.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken || '',
+          'x-admin-verified': 'true',
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          body: editBody,
+          emoji: editEmoji,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedNews = news.map(n =>
+          n.id === editingNews.id
+            ? { ...n, title: editTitle, body: editBody, emoji: editEmoji }
+            : n
+        );
+        setNews(updatedNews);
+        setEditingNews(null);
+        Alert.alert('Başarılı', 'Haber güncellendi');
+      } else {
+        Alert.alert('Hata', 'Haber güncellenemedi');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Güncelleme işlemi başarısız');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -149,7 +205,7 @@ export default function AdminPanel() {
           <View style={styles.info}>
             <Text style={styles.infoTitle}>ℹ️ Bilgi</Text>
             <Text style={styles.infoText}>
-              Admin paneline erişmek için şifre girin. Bu panelde haberler yönetebilir ve silebilirsiniz.
+              Admin paneline erişmek için şifre girin. Bu panelde haberler yönetebilir, düzenleyebilir ve silebilirsiniz.
             </Text>
           </View>
         </View>
@@ -205,17 +261,93 @@ export default function AdminPanel() {
                     {new Date(item.timestamp).toLocaleString('tr-TR')}
                   </Text>
                 </View>
-                <Pressable
-                  style={styles.deleteBtn}
-                  onPress={() => handleDeleteNews(item.id)}
-                >
-                  <Text style={styles.deleteBtnText}>Sil</Text>
-                </Pressable>
+                <View style={styles.actionButtons}>
+                  <Pressable
+                    style={[styles.actionBtn, styles.editBtn]}
+                    onPress={() => handleOpenEdit(item)}
+                  >
+                    <Text style={styles.actionBtnText}>✏️</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.actionBtn, styles.deleteBtn]}
+                    onPress={() => handleDeleteNews(item.id)}
+                  >
+                    <Text style={styles.actionBtnText}>🗑️</Text>
+                  </Pressable>
+                </View>
               </RNView>
             )}
           />
         )}
       </View>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editingNews !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditingNews(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>✏️ Haberi Düzenle</Text>
+              <Pressable onPress={() => setEditingNews(null)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.fieldLabel}>Emoji</Text>
+              <TextInput
+                style={styles.input}
+                value={editEmoji}
+                onChangeText={setEditEmoji}
+                placeholder="Emoji girin"
+                maxLength={2}
+              />
+
+              <Text style={styles.fieldLabel}>Başlık</Text>
+              <TextInput
+                style={[styles.input, styles.titleInput]}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Başlık girin"
+                multiline
+              />
+
+              <Text style={styles.fieldLabel}>İçerik</Text>
+              <TextInput
+                style={[styles.input, styles.bodyInput]}
+                value={editBody}
+                onChangeText={setEditBody}
+                placeholder="İçerik girin"
+                multiline
+                numberOfLines={6}
+              />
+
+              <View style={styles.modalActions}>
+                <Pressable
+                  style={[styles.button, styles.saveButton]}
+                  onPress={handleSaveEdit}
+                  disabled={editLoading}
+                >
+                  <Text style={styles.buttonText}>
+                    {editLoading ? 'Kaydediliyor...' : 'Kaydet'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setEditingNews(null)}
+                >
+                  <Text style={styles.buttonText}>İptal</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -290,6 +422,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#000',
   },
+  titleInput: {
+    minHeight: 50,
+  },
+  bodyInput: {
+    minHeight: 100,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
   button: {
     paddingVertical: 12,
     borderRadius: 8,
@@ -298,6 +442,16 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#627EEA',
+  },
+  saveButton: {
+    backgroundColor: '#28a745',
+    flex: 1,
+    marginRight: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#dc3545',
+    flex: 1,
+    marginLeft: 8,
   },
   buttonText: {
     color: 'white',
@@ -384,16 +538,23 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
   },
-  deleteBtn: {
-    backgroundColor: '#dc3545',
-    paddingHorizontal: 12,
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionBtn: {
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 6,
   },
-  deleteBtnText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
+  editBtn: {
+    backgroundColor: '#007AFF',
+  },
+  deleteBtn: {
+    backgroundColor: '#dc3545',
+  },
+  actionBtnText: {
+    fontSize: 14,
   },
   emptyState: {
     alignItems: 'center',
@@ -404,5 +565,42 @@ const styles = StyleSheet.create({
     color: '#999',
     fontSize: 14,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    marginBottom: 20,
+  },
 });
-
