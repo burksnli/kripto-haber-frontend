@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Alert, FlatList, Modal } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 
 interface NewsItem {
@@ -12,6 +13,7 @@ interface NewsItem {
 }
 
 export default function AdminPanel() {
+  const router = useRouter();
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -228,10 +230,28 @@ export default function AdminPanel() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>👨‍💼 Admin Dashboard</Text>
-        <Pressable onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Çıkış</Text>
-        </Pressable>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>👨‍💼 Admin Dashboard</Text>
+          <Pressable onPress={handleLogout} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Çıkış</Text>
+          </Pressable>
+        </View>
+
+        {/* Admin Menu */}
+        <View style={styles.adminMenu}>
+          <Pressable 
+            style={styles.adminMenuBtn}
+            onPress={() => router.push('/settings')}
+          >
+            <Text style={styles.adminMenuBtnText}>⚙️ Ayarlar</Text>
+          </Pressable>
+          <Pressable 
+            style={styles.adminMenuBtn}
+            onPress={() => router.push('/analytics')}
+          >
+            <Text style={styles.adminMenuBtnText}>📊 İstatistikler</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Stats */}
@@ -387,14 +407,36 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
     backgroundColor: 'rgba(98, 126, 234, 0.08)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(98, 126, 234, 0.1)',
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  adminMenu: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  adminMenuBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(98, 126, 234, 0.15)',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(98, 126, 234, 0.3)',
+    alignItems: 'center',
+  },
+  adminMenuBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#627EEA',
   },
   logoutButton: {
     paddingHorizontal: 16,
