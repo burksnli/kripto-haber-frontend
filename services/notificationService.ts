@@ -37,17 +37,22 @@ export const registerForPushNotificationsAsync = async () => {
 
     // Get the push token
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    console.log('🔑 Project ID:', projectId);
+    
     const token = await Notifications.getExpoPushTokenAsync({
       projectId,
     });
 
-    console.log('✅ Expo Push Token:', token.data);
+    console.log('✅ Expo Push Token Received:', token.data);
     
     // Save token locally
     await AsyncStorage.setItem('expoPushToken', token.data);
+    console.log('💾 Token saved to AsyncStorage');
     
     // Send token to backend
+    console.log('📤 Sending token to backend...');
     await registerPushTokenToBackend(token.data);
+    console.log('✅ Token registration complete');
     
     return token.data;
   } catch (error) {
@@ -66,6 +71,9 @@ async function registerPushTokenToBackend(pushToken: string) {
       ? JSON.parse(settings).backendUrl 
       : 'https://kripto-haber-backend.onrender.com';
     
+    console.log('🌐 Backend URL:', backendUrl);
+    console.log('📱 Registering token:', pushToken);
+    
     const response = await fetch(`${backendUrl}/api/register-push-token`, {
       method: 'POST',
       headers: {
@@ -75,13 +83,17 @@ async function registerPushTokenToBackend(pushToken: string) {
       body: JSON.stringify({ pushToken }),
     });
     
+    const responseData = await response.json();
+    console.log('📥 Backend response:', responseData);
+    
     if (response.ok) {
-      console.log('✅ Push token registered to backend');
+      console.log('✅ Push token registered to backend successfully!');
+      console.log(`📱 Total devices registered: ${responseData.totalDevices}`);
     } else {
-      console.log('⚠️ Failed to register push token to backend');
+      console.log('⚠️ Failed to register push token:', response.status);
     }
   } catch (error) {
-    console.error('Error registering push token:', error);
+    console.error('❌ Error registering push token:', error);
   }
 }
 
