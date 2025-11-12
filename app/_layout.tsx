@@ -3,14 +3,33 @@ import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import * as Notifications from 'expo-notifications';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { PriceAlertsProvider } from '@/context/PriceAlertsContext';
 import { PortfolioProvider } from '@/context/PortfolioContext';
+import { registerForPushNotificationsAsync } from '@/services/notificationService';
+
+// Initialize Google Mobile Ads on native platforms
+if (Platform.OS !== 'web') {
+  try {
+    const mobileAds = require('react-native-google-mobile-ads').default;
+    mobileAds()
+      .initialize()
+      .then(() => {
+        console.log('AdMob initialized');
+      })
+      .catch((error: any) => {
+        console.log('AdMob initialization error:', error);
+      });
+  } catch (error) {
+    console.log('AdMob not available:', error);
+  }
+}
 
 // Custom theme definitions
 const LightTheme = {
@@ -32,13 +51,13 @@ const LightTheme = {
       fontFamily: 'System',
       fontWeight: '500' as const,
     },
-    light: {
+    bold: {
       fontFamily: 'System',
-      fontWeight: '300' as const,
+      fontWeight: '700' as const,
     },
-    thin: {
+    heavy: {
       fontFamily: 'System',
-      fontWeight: '200' as const,
+      fontWeight: '900' as const,
     },
   },
 };
@@ -62,13 +81,13 @@ const DarkTheme = {
       fontFamily: 'System',
       fontWeight: '500' as const,
     },
-    light: {
+    bold: {
       fontFamily: 'System',
-      fontWeight: '300' as const,
+      fontWeight: '700' as const,
     },
-    thin: {
+    heavy: {
       fontFamily: 'System',
-      fontWeight: '200' as const,
+      fontWeight: '900' as const,
     },
   },
 };
@@ -86,17 +105,26 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// Set up notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Set up notification handler (only on native platforms)
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 // Request notification permission
 async function requestNotificationPermission() {
+  // Skip on web platform
+  if (Platform.OS === 'web') {
+    return false;
+  }
+
   try {
     const settings = await Notifications.getPermissionsAsync();
     
@@ -125,12 +153,54 @@ async function requestNotificationPermission() {
   return false;
 }
 
+// Show disclaimer with platform-specific method
+async function showDisclaimer() {
+  try {
+    // Check if disclaimer was already shown
+    const disclaimerShown = await AsyncStorage.getItem('disclaimerShown');
+    if (disclaimerShown === 'true') {
+      return;
+    }
+
+    // Show disclaimer based on platform
+    if (Platform.OS === 'web') {
+      // For web, use confirm dialog
+      const accepted = window.confirm(
+        '⚠️ Uyarı\n\n' +
+        'Bu uygulama yalnızca bilgilendirme amaçlı kullanılabilir.\n\n' +
+        'Hiçbir şekilde yatırım tavsiyesi değildir. Kripto paraların yüksek volatilitesi nedeniyle tüm yatırımlarınız risk altındadır.\n\n' +
+        'Tarihsel veriler gelecekteki performansı garanti etmez.'
+      );
+      
+      if (accepted) {
+        await AsyncStorage.setItem('disclaimerShown', 'true');
+      }
+    } else {
+      // For native, use Alert
+      Alert.alert(
+        '⚠️ Uyarı',
+        'Bu uygulama yalnızca bilgilendirme amaçlı kullanılabilir.\n\nHiçbir şekilde yatırım tavsiyesi değildir. Kripto paraların yüksek volatilitesi nedeniyle tüm yatırımlarınız risk altındadır.\n\nTarihsel veriler gelecekteki performansı garanti etmez.',
+        [
+          {
+            text: 'Anladım',
+            onPress: async () => {
+              await AsyncStorage.setItem('disclaimerShown', 'true');
+            }
+          }
+        ],
+        { cancelable: false }
+      );
+    }
+  } catch (error) {
+    console.log('Error showing disclaimer:', error);
+  }
+}
+
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   });
-  const [disclaimerShown, setDisclaimerShown] = useState(false);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
@@ -142,16 +212,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
       // Request notification permission
       requestNotificationPermission();
-      
+      // Register for push notifications (get Expo Push Token)
+      registerForPushNotificationsAsync();
       // Show disclaimer alert on app launch
-      if (!disclaimerShown) {
-        Alert.alert(
-          '⚠️ Uyarı',
-          'Bu uygulama yalnızca bilgilendirme amaçlı kullanılabilir.\n\nHiçbir şekilde yatırım tavsiyesi değildir. Kripto paraların yüksek volatilitesi nedeniyle tüm yatırımlarınız risk altındadır.\n\nTarihsel veriler gelecekteki performansı garanti etmez.',
-          [{ text: 'Anladım', onPress: () => setDisclaimerShown(true) }],
-          { cancelable: false }
-        );
-      }
+      showDisclaimer();
     }
   }, [loaded]);
 

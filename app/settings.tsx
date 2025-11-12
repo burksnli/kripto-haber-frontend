@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Alert, Switch } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Switch } from 'react-native';
 import { Text, View } from '@/components/Themed';
+import { showAlert } from '@/utils/platformHelpers';
 
 interface Settings {
   appTitle: string;
@@ -32,12 +33,12 @@ export default function SettingsScreen() {
   const handleSave = () => {
     localStorage.setItem('appSettings', JSON.stringify(settings));
     setIsSaved(true);
-    Alert.alert('Başarılı', 'Ayarlar kaydedildi');
+    showAlert('Başarılı', 'Ayarlar kaydedildi');
     setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleReset = () => {
-    Alert.alert('Sıfırla', 'Tüm ayarları varsayılana döndürmek istediğinize emin misiniz?', [
+    showAlert('Sıfırla', 'Tüm ayarları varsayılana döndürmek istediğinize emin misiniz?', [
       { text: 'İptal', style: 'cancel' },
       {
         text: 'Sıfırla',
@@ -51,7 +52,7 @@ export default function SettingsScreen() {
             darkMode: false,
           });
           localStorage.removeItem('appSettings');
-          Alert.alert('Tamamlandı', 'Ayarlar sıfırlandı');
+          showAlert('Tamamlandı', 'Ayarlar sıfırlandı');
         },
       },
     ]);

@@ -1,7 +1,8 @@
-import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, TouchableOpacity, TextInput, FlatList, Modal, Alert } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, TouchableOpacity, TextInput, FlatList, Modal } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Text, View } from '@/components/Themed';
 import { usePriceAlerts, PriceAlert } from '@/context/PriceAlertsContext';
+import { showAlert } from '@/utils/platformHelpers';
 
 interface CoinOption {
   id: string;
@@ -45,7 +46,7 @@ export default function AlertsScreen() {
 
   const handleAddAlert = async () => {
     if (!selectedCoin || !targetPrice) {
-      Alert.alert('Hata', 'Lütfen coin ve hedef fiyat girin');
+      showAlert('Hata', 'Lütfen coin ve hedef fiyat girin');
       return;
     }
 
@@ -60,7 +61,7 @@ export default function AlertsScreen() {
 
     resetForm();
     setShowModal(false);
-    Alert.alert('Başarılı', `${selectedCoin.name} için uyarı oluşturuldu!`);
+    showAlert('Başarılı', `${selectedCoin.name} için uyarı oluşturuldu!`);
   };
 
   const resetForm = () => {
@@ -161,7 +162,7 @@ export default function AlertsScreen() {
                 <TouchableOpacity 
                   style={styles.deleteBtn}
                   onPress={() => {
-                    Alert.alert(
+                    showAlert(
                       'Uyarıyı Sil',
                       `${alert.coinName} uyarısını silmek istediğinizden emin misiniz?`,
                       [

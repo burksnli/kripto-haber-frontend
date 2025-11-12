@@ -35,6 +35,7 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 
 export const PortfolioProvider = ({ children }: { children: React.ReactNode }) => {
   const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadPortfolio();
@@ -44,10 +45,17 @@ export const PortfolioProvider = ({ children }: { children: React.ReactNode }) =
     try {
       const stored = await AsyncStorage.getItem('portfolio');
       if (stored) {
-        setHoldings(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setHoldings(parsed);
+        }
       }
     } catch (error) {
       console.error('Error loading portfolio:', error);
+      // Initialize with empty array on error
+      setHoldings([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 

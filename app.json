@@ -15,7 +15,15 @@
     },
     "ios": {
       "supportsTabletMode": true,
-      "bundleIdentifier": "com.kriptohaber.mobil"
+      "bundleIdentifier": "com.kriptohaber.mobil",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,10 +31,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.kriptohaber.mobil",
+      "versionCode": 1,
       "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.POST_NOTIFICATIONS"
-      ],
-      "googleMobileAdsAppId": "ca-app-pub-9613759307120698~5338200585"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -40,7 +50,15 @@
           "icon": "./assets/images/icon.png",
           "color": "#2196F3"
         }
-      ]
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9613759307120698~5338200585",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      "expo-router"
     ],
     "notification": {
       "icon": "./assets/images/icon.png",

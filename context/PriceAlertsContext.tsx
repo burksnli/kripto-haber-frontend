@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 export interface PriceAlert {
   id: string;
@@ -27,6 +28,7 @@ const PriceAlertsContext = createContext<PriceAlertsContextType | undefined>(und
 
 export const PriceAlertsProvider = ({ children }: { children: React.ReactNode }) => {
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load alerts from storage on mount
   useEffect(() => {
@@ -37,10 +39,17 @@ export const PriceAlertsProvider = ({ children }: { children: React.ReactNode })
     try {
       const stored = await AsyncStorage.getItem('priceAlerts');
       if (stored) {
-        setAlerts(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setAlerts(parsed);
+        }
       }
     } catch (error) {
       console.error('Error loading alerts:', error);
+      // Initialize with empty array on error
+      setAlerts([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,6 +92,11 @@ export const PriceAlertsProvider = ({ children }: { children: React.ReactNode })
   };
 
   const checkPrices = async (prices: { [key: string]: number }) => {
+    // Skip notifications on web platform
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     for (const alert of alerts) {
       if (!alert.isActive) continue;
 
@@ -97,20 +111,24 @@ export const PriceAlertsProvider = ({ children }: { children: React.ReactNode })
       }
 
       if (shouldNotify) {
-        // Send notification
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            title: `🚨 ${alert.coinName} Uyarısı!`,
-            body: `${alert.coinName} ${alert.alertType === 'above' ? '✅' : '❌'} $${currentPrice.toFixed(2)} oldu. (Hedef: $${alert.targetPrice.toFixed(2)})`,
-            data: { coinId: alert.coinId },
-          },
-          trigger: null,
-        });
+        try {
+          // Send notification
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `🚨 ${alert.coinName} Uyarısı!`,
+              body: `${alert.coinName} ${alert.alertType === 'above' ? '✅' : '❌'} $${currentPrice.toFixed(2)} oldu. (Hedef: $${alert.targetPrice.toFixed(2)})`,
+              data: { coinId: alert.coinId },
+            },
+            trigger: null,
+          });
 
-        // Update last notified time
-        await updateAlert(alert.id, {
-          lastNotified: new Date().toISOString(),
-        });
+          // Update last notified time
+          await updateAlert(alert.id, {
+            lastNotified: new Date().toISOString(),
+          });
+        } catch (error) {
+          console.error('Error sending notification:', error);
+        }
       }
     }
   };

@@ -1,10 +1,88 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 export interface NotificationPayload {
   title: string;
   body: string;
   data?: Record<string, any>;
+}
+
+/**
+ * Get Expo Push Token for this device
+ * This token is used to send push notifications from backend
+ */
+export const registerForPushNotificationsAsync = async () => {
+  // Push notifications only work on physical devices
+  if (Platform.OS === 'web') {
+    console.log('Push notifications are not supported on web');
+    return null;
+  }
+
+  try {
+    // Check/request permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return null;
+    }
+
+    // Get the push token
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    const token = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
+
+    console.log('✅ Expo Push Token:', token.data);
+    
+    // Save token locally
+    await AsyncStorage.setItem('expoPushToken', token.data);
+    
+    // Send token to backend
+    await registerPushTokenToBackend(token.data);
+    
+    return token.data;
+  } catch (error) {
+    console.error('Error getting push token:', error);
+    return null;
+  }
+};
+
+/**
+ * Register push token to backend
+ */
+async function registerPushTokenToBackend(pushToken: string) {
+  try {
+    const settings = await AsyncStorage.getItem('appSettings');
+    const backendUrl = settings 
+      ? JSON.parse(settings).backendUrl 
+      : 'https://kripto-haber-backend.onrender.com';
+    
+    const response = await fetch(`${backendUrl}/api/register-push-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+      },
+      body: JSON.stringify({ pushToken }),
+    });
+    
+    if (response.ok) {
+      console.log('✅ Push token registered to backend');
+    } else {
+      console.log('⚠️ Failed to register push token to backend');
+    }
+  } catch (error) {
+    console.error('Error registering push token:', error);
+  }
 }
 
 /**

@@ -1,10 +1,11 @@
-import { StyleSheet, ScrollView, FlatList, RefreshControl, View as RNView, TextInput, Pressable, Alert } from 'react-native';
+import { StyleSheet, ScrollView, FlatList, RefreshControl, View as RNView, TextInput, Pressable, Platform } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
 import { Text, View } from '@/components/Themed';
 import AdBanner from '@/components/AdBanner';
+import { showAlert } from '@/utils/platformHelpers';
 
 interface NewsItem {
   id: string;
@@ -63,19 +64,28 @@ export default function NewsScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [adsConfig, setAdsConfig] = useState({ showAdsOnNewsPage: true });
+  const [adsConfig, setAdsConfig] = useState({ 
+    bannerAdsEnabled: true,
+    showAdsOnNewsPage: true 
+  });
 
   useEffect(() => {
     loadNews();
     fetchAdsConfig();
     
-    // Haberleri 10 saniyede bir kontrol et ve yeni haberler varsa bildir
+    // Haberleri 30 saniyede bir kontrol et ve yeni haberler varsa bildir
     const interval = setInterval(async () => {
       try {
-        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+        // Backend URL'sini ayarlardan al
+        const settings = await AsyncStorage.getItem('appSettings');
+        const backendUrl = settings 
+          ? JSON.parse(settings).backendUrl 
+          : 'https://kripto-haber-backend.onrender.com';
+        
         const response = await fetch(`${backendUrl}/api/news`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
+        
         if (response.ok) {
           const data = await response.json();
           if (data.news && data.news.length > allNews.length) {
@@ -83,29 +93,35 @@ export default function NewsScreen() {
             const newArticles = data.news.slice(0, data.news.length - allNews.length);
             console.log(`🔔 ${newArticles.length} yeni haber bulundu!`);
             
-            newArticles.forEach((article, index) => {
-              // Her haber için 500ms fark ile bildirim gönder
-              setTimeout(() => {
-                Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: '📰 Yeni Haber!',
-                    body: article.title,
-                    data: { newsId: article.id },
-                  },
-                  trigger: { seconds: 1 },
-                });
-                console.log(`✅ Bildirim gönderildi: ${article.title}`);
-              }, index * 500);
-            });
+            // Sadece native platformlarda bildirim gönder
+            if (Platform.OS !== 'web') {
+              newArticles.forEach((article: NewsItem, index: number) => {
+                // Her haber için 500ms fark ile bildirim gönder
+                setTimeout(() => {
+                  Notifications.scheduleNotificationAsync({
+                    content: {
+                      title: '📰 Yeni Haber!',
+                      body: article.title,
+                      data: { newsId: article.id },
+                    },
+                    trigger: null,
+                  });
+                  console.log(`✅ Bildirim gönderildi: ${article.title}`);
+                }, index * 500);
+              });
+            }
             
             setAllNews(data.news);
             setNews(data.news);
+            
+            // AsyncStorage'a da kaydet
+            await AsyncStorage.setItem('telegramNews', JSON.stringify(data.news));
           }
         }
       } catch (error) {
         console.log('Polling error:', error);
       }
-    }, 10000); // 10 saniyede bir
+    }, 30000); // 30 saniyede bir
     
     return () => clearInterval(interval);
   }, [allNews.length]);
@@ -114,9 +130,15 @@ export default function NewsScreen() {
     try {
       setLoading(true);
       
-      // Try to load from backend API first (for web)
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+      // Backend URL'sini ayarlardan al
+      const settings = await AsyncStorage.getItem('appSettings');
+      const backendUrl = settings 
+        ? JSON.parse(settings).backendUrl 
+        : 'https://kripto-haber-backend.onrender.com';
+      
+      // Try to load from backend API first
       try {
+        console.log('📡 Backend\'den haberler çekiliyor:', backendUrl);
         const response = await fetch(`${backendUrl}/api/news`, {
           headers: {
             'Content-Type': 'application/json',
@@ -125,24 +147,27 @@ export default function NewsScreen() {
         });
         if (response.ok) {
           const data = await response.json();
-          console.log('Backend news:', data);
+          console.log(`✅ Backend\'den ${data.news.length} haber alındı`);
           if (data.news && data.news.length > 0) {
             setAllNews(data.news);
             setNews(data.news);
+            // AsyncStorage'a da kaydet
+            await AsyncStorage.setItem('telegramNews', JSON.stringify(data.news));
             setLoading(false);
             return;
           }
         }
       } catch (err) {
-        console.log('Backend not available:', err);
+        console.log('⚠️ Backend\'e bağlanılamadı:', err);
       }
       
       // Fallback to AsyncStorage (for mobile)
       const savedNews = await AsyncStorage.getItem('telegramNews');
       if (savedNews) {
         const newsItems = JSON.parse(savedNews);
-        setAllNews([...newsItems.reverse()]);
-        setNews([...newsItems.reverse()]);
+        console.log(`📱 Local storage'dan ${newsItems.length} haber yüklendi`);
+        setAllNews([...newsItems]);
+        setNews([...newsItems]);
       }
     } catch (error) {
       console.error('Error loading news:', error);
@@ -153,7 +178,11 @@ export default function NewsScreen() {
 
   const fetchAdsConfig = async () => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+      const settings = await AsyncStorage.getItem('appSettings');
+      const backendUrl = settings 
+        ? JSON.parse(settings).backendUrl 
+        : 'https://kripto-haber-backend.onrender.com';
+      
       const response = await fetch(`${backendUrl}/admin/ads/config`);
       const data = await response.json();
       if (data.ok) {
@@ -185,7 +214,10 @@ export default function NewsScreen() {
 
   const deleteNews = async (newsId: string) => {
     try {
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://kripto-haber-backend.onrender.com';
+      const settings = await AsyncStorage.getItem('appSettings');
+      const backendUrl = settings 
+        ? JSON.parse(settings).backendUrl 
+        : 'https://kripto-haber-backend.onrender.com';
       
       const response = await fetch(`${backendUrl}/api/news/${newsId}`, {
         method: 'DELETE',
@@ -197,15 +229,18 @@ export default function NewsScreen() {
 
       if (response.ok) {
         // Haberi listeden kaldır
-        setAllNews(prev => prev.filter(item => item.id !== newsId));
-        setNews(prev => prev.filter(item => item.id !== newsId));
-        Alert.alert('Başarılı', 'Haber silindi');
+        const updatedNews = allNews.filter(item => item.id !== newsId);
+        setAllNews(updatedNews);
+        setNews(updatedNews);
+        // AsyncStorage'ı da güncelle
+        await AsyncStorage.setItem('telegramNews', JSON.stringify(updatedNews));
+        showAlert('Başarılı', 'Haber silindi');
       } else {
-        Alert.alert('Hata', 'Haber silinemedi');
+        showAlert('Hata', 'Haber silinemedi');
       }
     } catch (error) {
       console.error('Error deleting news:', error);
-      Alert.alert('Hata', 'Silme işlemi başarısız oldu');
+      showAlert('Hata', 'Silme işlemi başarısız oldu');
     }
   };
 
@@ -269,8 +304,8 @@ export default function NewsScreen() {
         <FlatList
           scrollEnabled={false}
           data={news}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
+          keyExtractor={(item: NewsItem) => item.id}
+          renderItem={({ item, index }: { item: NewsItem; index: number }) => (
             <RNView style={[styles.newsCard, index === 0 && styles.newsCardFirst]}>
               <View style={styles.newsCardContent}>
                 <View style={styles.newsHeader}>

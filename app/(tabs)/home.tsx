@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, ActivityIndicator, RefreshControl, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -69,17 +69,51 @@ export default function HomeScreen() {
       setLosers(sorted.slice(-3).reverse());
 
       // Load favorites and filter
-      const saved = await AsyncStorage.getItem('favoriteCoinIds');
-      const favIds = saved ? JSON.parse(saved) : [];
-      setFavorites(favIds);
-      
-      const favCoins = allCoins.filter((coin: CryptoPrice) => favIds.includes(coin.id)).slice(0, 4);
-      setFavoriteCoins(favCoins);
+      try {
+        const saved = await AsyncStorage.getItem('favoriteCoinIds');
+        const favIds = saved ? JSON.parse(saved) : [];
+        setFavorites(favIds);
+        
+        const favCoins = allCoins.filter((coin: CryptoPrice) => favIds.includes(coin.id)).slice(0, 4);
+        setFavoriteCoins(favCoins);
+      } catch (err) {
+        console.error('Error loading favorites:', err);
+        setFavorites([]);
+        setFavoriteCoins([]);
+      }
 
-      // Load recent news
-      const newsData = await AsyncStorage.getItem('telegramNews');
-      const news = newsData ? JSON.parse(newsData).reverse().slice(0, 5) : [];
-      setRecentNews(news);
+      // Load recent news from backend first, then fallback to AsyncStorage
+      try {
+        const settings = await AsyncStorage.getItem('appSettings');
+        const backendUrl = settings 
+          ? JSON.parse(settings).backendUrl 
+          : 'https://kripto-haber-backend.onrender.com';
+        
+        try {
+          const response = await fetch(`${backendUrl}/api/news`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.news && data.news.length > 0) {
+              setRecentNews(data.news.slice(0, 5));
+              // AsyncStorage'a da kaydet
+              await AsyncStorage.setItem('telegramNews', JSON.stringify(data.news));
+              return;
+            }
+          }
+        } catch (backendErr) {
+          console.log('Backend not available, using local storage');
+        }
+        
+        // Fallback to AsyncStorage
+        const newsData = await AsyncStorage.getItem('telegramNews');
+        const news = newsData ? JSON.parse(newsData).slice(0, 5) : [];
+        setRecentNews(news);
+      } catch (err) {
+        console.error('Error loading news:', err);
+        setRecentNews([]);
+      }
 
     } catch (error) {
       console.error('Error fetching home data:', error);
@@ -96,6 +130,16 @@ export default function HomeScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     fetchHomeData();
+  };
+
+  const handleNewsClick = (news: NewsItem) => {
+    if (Platform.OS === 'web') {
+      // For web, show in console or use window.alert
+      window.alert(`${news.title}\n\n${news.body}`);
+    } else {
+      // For native, use Alert
+      Alert.alert(news.title, news.body);
+    }
   };
 
   if (loading) {
@@ -241,7 +285,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>📰 Son Haberler</Text>
           {recentNews.map((news) => (
-            <TouchableOpacity key={news.id} onPress={() => router.push(`/news/${news.id}`)}>
+            <TouchableOpacity key={news.id} onPress={() => handleNewsClick(news)}>
               <RNView style={styles.newsPreview}>
                 <Text style={styles.newsTitle} numberOfLines={2}>{news.emoji} {news.title}</Text>
                 <Text style={styles.newsBody} numberOfLines={2}>{news.body}</Text>

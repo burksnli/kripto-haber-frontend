@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, Alert, FlatList, Modal } from 'react-native';
+import { StyleSheet, ScrollView, View as RNView, TextInput, Pressable, FlatList, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text, View } from '@/components/Themed';
+import { showAlert } from '@/utils/platformHelpers';
 
 interface NewsItem {
   id: string;
@@ -77,12 +78,12 @@ export default function AdminPanel() {
 
       const data = await response.json();
       if (data.ok) {
-        Alert.alert('Başarılı', 'Reklam ayarları kaydedildi');
+        showAlert('Başarılı', 'Reklam ayarları kaydedildi');
       } else {
-        Alert.alert('Hata', data.error || 'Kaydedilemedi');
+        showAlert('Hata', data.error || 'Kaydedilemedi');
       }
     } catch (error) {
-      Alert.alert('Hata', 'Kaydetme işlemi başarısız');
+      showAlert('Hata', 'Kaydetme işlemi başarısız');
     } finally {
       setAdsSaving(false);
     }
@@ -90,7 +91,7 @@ export default function AdminPanel() {
 
   const handleLogin = async () => {
     if (!password.trim()) {
-      Alert.alert('Hata', 'Şifre girin');
+      showAlert('Hata', 'Şifre girin');
       return;
     }
 
@@ -107,13 +108,13 @@ export default function AdminPanel() {
         setAdminToken(data.token);
         localStorage.setItem('adminToken', data.token);
         setPassword('');
-        Alert.alert('Başarılı', 'Admin paneline hoş geldiniz!');
+        showAlert('Başarılı', 'Admin paneline hoş geldiniz!');
         fetchNews(data.token);
       } else {
-        Alert.alert('Hata', data.error || 'Giriş başarısız');
+        showAlert('Hata', data.error || 'Giriş başarısız');
       }
     } catch (error) {
-      Alert.alert('Hata', 'Giriş yapılamadı: ' + (error as any).message);
+      showAlert('Hata', 'Giriş yapılamadı: ' + (error as any).message);
     } finally {
       setLoginLoading(false);
     }
@@ -148,7 +149,7 @@ export default function AdminPanel() {
     if (!editingNews) return;
 
     if (!editTitle.trim() || !editBody.trim()) {
-      Alert.alert('Hata', 'Başlık ve içerik boş olamaz');
+      showAlert('Hata', 'Başlık ve içerik boş olamaz');
       return;
     }
 
@@ -187,13 +188,13 @@ export default function AdminPanel() {
         );
         setNews(updatedNews);
         setEditingNews(null);
-        Alert.alert('Başarılı', 'Haber güncellendi');
+        showAlert('Başarılı', 'Haber güncellendi');
       } else {
-        Alert.alert('Hata', data.error || 'Haber güncellenemedi - ' + response.status);
+        showAlert('Hata', data.error || 'Haber güncellenemedi - ' + response.status);
       }
     } catch (error) {
       console.error('Update error:', error);
-      Alert.alert('Hata', 'Güncelleme işlemi başarısız: ' + (error as any).message);
+      showAlert('Hata', 'Güncelleme işlemi başarısız: ' + (error as any).message);
     } finally {
       setEditLoading(false);
     }
@@ -204,7 +205,7 @@ export default function AdminPanel() {
     console.log('adminToken:', adminToken);
     console.log('backendUrl:', backendUrl);
     
-    Alert.alert('Sil', 'Bu haberi silmek istediğinize emin misiniz?', [
+    showAlert('Sil', 'Bu haberi silmek istediğinize emin misiniz?', [
       { text: 'İptal', style: 'cancel' },
       {
         text: 'Sil',
@@ -242,13 +243,13 @@ export default function AdminPanel() {
 
       if (response.ok) {
         setNews(news.filter(n => n.id !== newsId));
-        Alert.alert('Başarılı', 'Haber silindi');
+        showAlert('Başarılı', 'Haber silindi');
       } else {
-        Alert.alert('Hata', data.error || 'Haber silinemedi - ' + response.status);
+        showAlert('Hata', data.error || 'Haber silinemedi - ' + response.status);
       }
     } catch (error) {
       console.error('DELETE error:', error);
-      Alert.alert('Hata', 'Silme işlemi başarısız: ' + (error as any).message);
+      showAlert('Hata', 'Silme işlemi başarısız: ' + (error as any).message);
     }
   };
 
@@ -256,7 +257,7 @@ export default function AdminPanel() {
     setAdminToken(null);
     localStorage.removeItem('adminToken');
     setPassword('');
-    Alert.alert('Çıkış', 'Admin panelinden çıktınız');
+    showAlert('Çıkış', 'Admin panelinden çıktınız');
   };
 
   if (!adminToken) {
@@ -384,7 +385,7 @@ export default function AdminPanel() {
         </RNView>
 
         <Pressable 
-          style={[styles.button, styles.saveButton]}
+          style={[styles.button, styles.adsSaveButton]}
           onPress={saveAdsConfig}
           disabled={adsSaving}
         >
@@ -406,8 +407,8 @@ export default function AdminPanel() {
           <FlatList
             scrollEnabled={false}
             data={news}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            keyExtractor={(item: NewsItem) => item.id}
+            renderItem={({ item }: { item: NewsItem }) => (
               <RNView style={styles.newsItem}>
                 <View style={styles.newsItemContent}>
                   <Text style={styles.newsTitle} numberOfLines={2}>
@@ -822,7 +823,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#666',
   },
-  saveButton: {
+  adsSaveButton: {
     backgroundColor: '#28a745',
     marginTop: 8,
   },
